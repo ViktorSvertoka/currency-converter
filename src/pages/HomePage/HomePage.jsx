@@ -2,119 +2,102 @@ import axios from 'axios';
 import { useEffect, useState } from 'react';
 
 const HomePage = () => {
-  const [cur1, setCur1] = useState(1);
-  const [cur2, setCur2] = useState(1);
-  const [selectCur, setSelectCur] = useState([]);
-
-  const date = new Date();
-  const today = date.toLocaleDateString();
-
-  const [selectedCurrency1, setSelectedCurrency1] = useState({
-    r030: 840,
-    txt: 'Долар США',
-    rate: 36.3535,
-    cc: 'USD',
-    exchangedate: today,
-  });
-
-  const [selectedCurrency2, setSelectedCurrency2] = useState({
-    r030: 1000,
-    txt: 'Українська гривня',
-    rate: 1,
-    cc: 'UAH',
-    exchangedate: today,
-  });
+  const [currency1, setCurrency1] = useState(1);
+  const [currency2, setCurrency2] = useState(1);
+  const [selectedCurrency1, setSelectedCurrency1] = useState('USD');
+  const [selectedCurrency2, setSelectedCurrency2] = useState('USD');
+  const [select, setSelect] = useState([]);
 
   useEffect(() => {
     const getCurrency = async () => {
-      //   console.log(today);
       try {
-        await axios
-          .get(
-            'https://bank.gov.ua/NBUStatService/v1/statdirectory/exchangenew?json '
-          )
-          .then(res => {
-            // console.log(res.data);
-            const selectCur = res.data.filter(cur => {
-              return cur.cc === 'USD' || cur.cc === 'EUR';
-            });
+        const response = await axios.get(
+          'https://bank.gov.ua/NBUStatService/v1/statdirectory/exchangenew?json'
+        );
+        const filteredCurrencies = response.data.filter(
+          cur => cur.cc === 'USD' || cur.cc === 'EUR'
+        );
 
-            setSelectCur([
-              ...selectCur,
-              {
-                r030: 1000,
-                txt: 'Українська гривня',
-                rate: 1,
-                cc: 'UAH',
-                exchangedate: today,
-              },
-            ]);
-          });
+        setSelect([
+          ...filteredCurrencies,
+          {
+            r030: 1000,
+            txt: 'Українська гривня',
+            rate: 1,
+            cc: 'UAH',
+          },
+        ]);
       } catch (error) {
         console.log(error);
       }
     };
+
     getCurrency();
-  }, [today]);
-  //   console.log(selectCur);
-  useEffect(() => {
-    setCur2(() => {
-      const countedValue =
-        (cur1 * selectedCurrency1.rate) / selectedCurrency2.rate;
+  }, []);
 
-      return Number(countedValue);
-    });
-  }, [cur1, selectedCurrency1.rate, selectedCurrency2.rate]);
+  const rateUsd = select[0]?.rate || 0;
+  const rateEur = select[1]?.rate || 0;
 
-  //   useEffect(() => {
-  //     setCur1(() => {
-  //       const countedValue =
-  //         (cur2 * selectedCurrency2.rate) / selectedCurrency1.rate;
+  const handleInputCurrency1 = event => {
+    const value = Number(event.target.value);
 
-  //       return Number(countedValue);
-  //     });
-  //   }, [cur2, selectedCurrency1.rate, selectedCurrency2.rate]);
+    if (isNaN(value)) {
+      return;
+    }
 
-  const handleInputCur1 = e => {
-    const value = Number(e.target.value);
+    setCurrency1(value);
 
-    setCur1(value);
-    setCur2(() => {
-      const countedValue =
-        (cur1 * selectedCurrency1.rate) / selectedCurrency2.rate;
-
-      return Number(countedValue);
-    });
+    if (selectedCurrency1 === selectedCurrency2) {
+      setCurrency2(value);
+    } else if (selectedCurrency1 === 'UAH' && selectedCurrency2 === 'USD') {
+      setCurrency2((value / rateUsd).toFixed(2));
+    } else if (selectedCurrency2 === 'UAH' && selectedCurrency1 === 'USD') {
+      setCurrency2((value * rateUsd).toFixed(2));
+    } else if (selectedCurrency1 === 'UAH' && selectedCurrency2 === 'EUR') {
+      setCurrency2((value / rateEur).toFixed(2));
+    } else if (selectedCurrency2 === 'UAH' && selectedCurrency1 === 'EUR') {
+      setCurrency2((value * rateEur).toFixed(2));
+    } else if (selectedCurrency1 === 'USD' && selectedCurrency2 === 'EUR') {
+      setCurrency2(((value * rateUsd) / rateEur).toFixed(2));
+    } else {
+      setCurrency2(((value * rateEur) / rateUsd).toFixed(2));
+    }
   };
 
-  const handleInputCur2 = e => {
-    const value = Number(e.target.value);
-
-    setCur2(value);
-    setCur1(() => {
-      const countedValue =
-        (cur2 * selectedCurrency2.rate) / selectedCurrency1.rate;
-
-      return Number(countedValue);
-    });
+  const handSelectCurrency1 = event => {
+    const value = event.target.value;
+    setSelectedCurrency1(value);
   };
 
-  const handleChangeCurr1 = e => {
-    const selectedCurr = selectCur.filter(cur => cur.cc === e.target.value);
+  const handleInputCurrency2 = event => {
+    const value = Number(event.target.value);
 
-    setSelectedCurrency1(...selectedCurr);
-    setCur2(Number((cur1 * selectedCurrency1.rate) / selectedCurrency2.rate));
+    if (isNaN(value)) {
+      return;
+    }
+
+    setCurrency2(value);
+
+    if (selectedCurrency1 === selectedCurrency2) {
+      setCurrency1(value);
+    } else if (selectedCurrency2 === 'UAH' && selectedCurrency1 === 'USD') {
+      setCurrency1((value / rateUsd).toFixed(2));
+    } else if (selectedCurrency1 === 'UAH' && selectedCurrency2 === 'USD') {
+      setCurrency1((value * rateUsd).toFixed(2));
+    } else if (selectedCurrency1 === 'UAH' && selectedCurrency2 === 'EUR') {
+      setCurrency1((value / rateEur).toFixed(2));
+    } else if (selectedCurrency2 === 'UAH' && selectedCurrency1 === 'EUR') {
+      setCurrency1((value * rateEur).toFixed(2));
+    } else if (selectedCurrency1 === 'USD' && selectedCurrency2 === 'EUR') {
+      setCurrency1(((value * rateEur) / rateUsd).toFixed(2));
+    } else {
+      setCurrency1(((value * rateUsd) / rateEur).toFixed(2));
+    }
   };
 
-  const handleChangeCurr2 = e => {
-    const selectedCurr = selectCur.filter(cur => cur.cc === e.target.value);
-    setSelectedCurrency2(...selectedCurr);
-    setCur1(() => {
-      const countedValue =
-        (cur2 * selectedCurrency2.rate) / selectedCurrency1.rate;
-
-      return Number(countedValue);
-    });
+  const handSelectCurrency2 = event => {
+    const value = event.target.value;
+    setSelectedCurrency2(value);
   };
 
   return (
@@ -122,38 +105,34 @@ const HomePage = () => {
       <form>
         <label>
           <input
-            name="cur1"
+            name="currency1"
             type="text"
-            value={cur1}
-            onChange={handleInputCur1}
+            value={currency1}
+            onChange={handleInputCurrency1}
           />
-          <select value={selectedCurrency1.cc} onChange={handleChangeCurr1}>
-            {selectCur.map(cur => {
-              return (
-                <option key={cur.r030} value={cur.cc}>
-                  {cur.cc}
-                </option>
-              );
-            })}
+          <select value={selectedCurrency1} onChange={handSelectCurrency1}>
+            {select.map(cur => (
+              <option key={cur.r030} value={cur.cc}>
+                {cur.cc}
+              </option>
+            ))}
           </select>
         </label>
 
         <label>
           <input
-            name="cur2"
+            name="currency2"
             type="text"
             autoComplete="off"
-            value={cur2}
-            onChange={handleInputCur2}
+            value={currency2}
+            onChange={handleInputCurrency2}
           />
-          <select value={selectedCurrency2.cc} onChange={handleChangeCurr2}>
-            {selectCur.map(cur => {
-              return (
-                <option key={cur.r030} value={cur.cc}>
-                  {cur.cc}
-                </option>
-              );
-            })}
+          <select value={selectedCurrency2} onChange={handSelectCurrency2}>
+            {select.map(cur => (
+              <option key={cur.r030} value={cur.cc}>
+                {cur.cc}
+              </option>
+            ))}
           </select>
         </label>
       </form>
